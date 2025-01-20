@@ -1,0 +1,71 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Scanner;
+import org.json.JSONObject;
+
+public class CurrencyConverter {
+    private static final String API_KEY = "b98c8f6a228368145e85ffc1";
+    private static final String BASE_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/";
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        
+        try {
+            // Solicitar información al usuario
+            System.out.print("Introduce la moneda base (por ejemplo, USD): ");
+            String baseCurrency = scanner.nextLine().toUpperCase();
+            
+            System.out.print("Introduce la moneda objetivo (por ejemplo, EUR): ");
+            String targetCurrency = scanner.nextLine().toUpperCase();
+            
+            System.out.print("Introduce el monto a convertir: ");
+            double amount = scanner.nextDouble();
+            
+            // Construir la URL
+            String urlString = BASE_URL + baseCurrency;
+            URL url = new URL(urlString);
+            
+            // Realizar la solicitud HTTP
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            
+            int responseCode = conn.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                // Leer la respuesta
+                BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String inputLine;
+                
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+                
+                // Parsear la respuesta JSON
+                JSONObject jsonResponse = new JSONObject(response.toString());
+                JSONObject conversionRates = jsonResponse.getJSONObject("conversion_rates");
+                
+                if (conversionRates.has(targetCurrency)) {
+                    // Obtener la tasa de conversión
+                    double rate = conversionRates.getDouble(targetCurrency);
+                    double convertedAmount = rate * amount;
+                    
+                    // Mostrar el resultado
+                    System.out.printf("Tasa de cambio: 1 %s = %.2f %s%n", baseCurrency, rate, targetCurrency);
+                    System.out.printf("Monto convertido: %.2f %s%n", convertedAmount, targetCurrency);
+                } else {
+                    System.out.println("Moneda objetivo no válida.");
+                }
+            } else {
+                System.out.println("Error al obtener las tasas de cambio. Código de respuesta: " + responseCode);
+            }
+            
+        } catch (Exception e) {
+            System.out.println("Ocurrió un error: " + e.getMessage());
+        } finally {
+            scanner.close();
+        }
+    }
+}
